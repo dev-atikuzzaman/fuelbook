@@ -51,3 +51,18 @@ export async function deleteGenericFile(row) {
   const { error } = await supabase.from("files").delete().eq("id", row.id);
   if (error) throw error;
 }
+
+// একসাথে একাধিক ফাইল ডিলিট করার জন্য (ফোল্ডার মোছার সময় ব্যবহার হয়)
+export async function deleteFilesBulk(rows) {
+  if (!supabase) throw new Error("Supabase কনফিগার করা নেই");
+  if (!rows || rows.length === 0) return;
+  const paths = rows.map((r) => r.path);
+  const ids = rows.map((r) => r.id);
+  // storage.remove এ একবারে অনেক path পাঠানো যায়, কিন্তু ব্যাচে ভাগ করে দিলে বেশি নিরাপদ
+  const BATCH = 50;
+  for (let i = 0; i < paths.length; i += BATCH) {
+    await supabase.storage.from(FILES_BUCKET).remove(paths.slice(i, i + BATCH));
+  }
+  const { error } = await supabase.from("files").delete().in("id", ids);
+  if (error) throw error;
+}
