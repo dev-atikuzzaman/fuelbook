@@ -1,0 +1,13 @@
+{
+  "short_name": "আমার অভিধান",
+  "name": "আমার অভিধান — কাস্টম ডিকশনারি ও তথ্যভাণ্ডার",
+  "icons": [
+    { "src": "logo192.png", "type": "image/png", "sizes": "192x192" },
+    { "src": "logo512.png", "type": "image/png", "sizes": "512x512" }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#071d14",
+  "background_color": "#04120c"
+}
