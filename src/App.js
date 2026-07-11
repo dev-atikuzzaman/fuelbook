@@ -4,12 +4,14 @@ import DictionaryTab from "./components/DictionaryTab";
 import FilesTab from "./components/FilesTab";
 import CustomTab from "./components/CustomTab";
 import Toast from "./components/Toast";
+import Login from "./components/Login";
 import { supabase } from "./lib/supabase";
 
 export default function App() {
   const [active, setActive] = useState("general");
   const [toast, setToast] = useState(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [session, setSession] = useState(undefined); // undefined = checking, null = logged out, obj = logged in
 
   useEffect(() => {
     if ("serviceWorker" in navigator) {
@@ -25,10 +27,38 @@ export default function App() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!supabase) {
+      setSession(null);
+      return;
+    }
+    supabase.auth.getSession().then(({ data }) => setSession(data.session));
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, s) => setSession(s));
+    return () => listener.subscription.unsubscribe();
+  }, []);
+
   function showToast(t) {
     setToast(t);
     window.clearTimeout(window.__toastTimer);
     window.__toastTimer = window.setTimeout(() => setToast(null), 3000);
+  }
+
+  async function handleLogout() {
+    if (supabase) await supabase.auth.signOut();
+    setSession(null);
+  }
+
+  // Supabase কনফিগার করা নেই — সরাসরি এরর দেখাও, লগইন স্ক্রিন লাগবে না
+  if (supabase && session === undefined) {
+    return (
+      <div className="min-h-screen bg-ink-950 flex items-center justify-center text-cream/40">
+        লোড হচ্ছে...
+      </div>
+    );
+  }
+
+  if (supabase && !session) {
+    return <Login onLoggedIn={setSession} />;
   }
 
   return (
@@ -39,7 +69,7 @@ export default function App() {
       <div className="blob w-72 h-72 bg-emerald-700 bottom-0 left-1/4" />
 
       <div className="relative z-10">
-        <TopNav active={active} onChange={setActive} isOnline={isOnline} />
+        <TopNav active={active} onChange={setActive} isOnline={isOnline} onLogout={handleLogout} />
 
         {!supabase && (
           <div className="max-w-4xl mx-auto mt-4 mx-4 px-4 py-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-300 text-sm">
