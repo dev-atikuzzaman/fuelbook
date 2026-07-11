@@ -85,17 +85,18 @@ create trigger trg_touch_custom_entries before update on public.custom_entries
   for each row execute function public.touch_updated_at();
 
 -- ── ROW LEVEL SECURITY ───────────────────────────────────────────
--- এটা একটা পার্সোনাল/সিঙ্গেল-ইউজার ডিভাইস-সিঙ্ক অ্যাপ (কোনো লগইন নেই)।
--- anon key নিজেই গোপন রাখা হয় (env var হিসেবে), তাই anon role কে পূর্ণ
--- read/write দেওয়া হলো যাতে সব ডিভাইস থেকে রিয়েল-টাইম সিঙ্ক কাজ করে।
+-- এটা একটা পার্সোনাল, একজন-এডমিন-চালিত অ্যাপ। শুধুমাত্র Supabase Auth
+-- দিয়ে লগইন করা ইউজার (authenticated role) ডাটা পড়তে/লিখতে পারবে —
+-- anonymous/না-লগইন-করা কেউ কিছুই দেখতে বা বদলাতে পারবে না।
 do $$
 declare t text;
 begin
   foreach t in array array['dictionary_entries','files','custom_templates','custom_entries','custom_fields'] loop
     execute format('alter table public.%I enable row level security;', t);
     execute format('drop policy if exists "anon_full_access" on public.%I;', t);
-    execute format($p$create policy "anon_full_access" on public.%I
-      for all using (true) with check (true);$p$, t);
+    execute format('drop policy if exists "authenticated_full_access" on public.%I;', t);
+    execute format($p$create policy "authenticated_full_access" on public.%I
+      for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');$p$, t);
   end loop;
 end $$;
 
@@ -115,16 +116,32 @@ insert into storage.buckets (id, name, public)
 values ('app-files', 'app-files', true)
 on conflict (id) do nothing;
 
--- Storage policies: anon কে দুইটা bucket এ পূর্ণ read/write দাও
+-- Storage policies: শুধু লগইন করা এডমিন আপলোড/ডিলিট করতে পারবে।
+-- bucket দুইটা public=true রাখা হয়েছে যাতে getPublicUrl() দিয়ে জেনারেট করা
+-- লিংক থেকে সরাসরি ছবি/ফাইল দেখা বা ডাউনলোড করা যায় (path random বলে অনুমান করা কঠিন);
+-- upload/update/delete-এর জন্য অবশ্যই লগইন লাগবে।
 drop policy if exists "anon_storage_all_images" on storage.objects;
-create policy "anon_storage_all_images" on storage.objects
-  for all using (bucket_id = 'app-images') with check (bucket_id = 'app-images');
+drop policy if exists "authenticated_storage_write_images" on storage.objects;
+create policy "authenticated_storage_write_images" on storage.objects
+  for all using (bucket_id = 'app-images' and auth.role() = 'authenticated')
+  with check (bucket_id = 'app-images' and auth.role() = 'authenticated');
 
 drop policy if exists "anon_storage_all_files" on storage.objects;
-create policy "anon_storage_all_files" on storage.objects
-  for all using (bucket_id = 'app-files') with check (bucket_id = 'app-files');
+drop policy if exists "authenticated_storage_write_files" on storage.objects;
+create policy "authenticated_storage_write_files" on storage.objects
+  for all using (bucket_id = 'app-files' and auth.role() = 'authenticated')
+  with check (bucket_id = 'app-files' and auth.role() = 'authenticated');
 
 -- ══════════════════════════════════════════════════════════════
--- সম্পন্ন! এখন React অ্যাপে REACT_APP_SUPABASE_URL ও
--- REACT_APP_SUPABASE_ANON_KEY বসিয়ে Vercel এ deploy করো।
+-- সম্পন্ন! এখন নিচের ধাপে এডমিন অ্যাকাউন্ট বানাও:
+--
+-- Supabase Dashboard → Authentication → Users → "Add user"
+--   → নিজের ইমেইল ও পাসওয়ার্ড দাও → "Auto Confirm User" টিক দাও → Create
+--
+-- তারপর Authentication → Settings/Providers এ গিয়ে
+-- "Allow new users to sign up" অপশনটা বন্ধ (OFF) করে দাও,
+-- যাতে তুমি ছাড়া আর কেউ নতুন অ্যাকাউন্ট বানাতে না পারে।
+--
+-- React অ্যাপে REACT_APP_SUPABASE_URL ও REACT_APP_SUPABASE_ANON_KEY
+-- বসিয়ে Vercel এ deploy করো — লগইন স্ক্রিনে ওই ইমেইল/পাসওয়ার্ড দিয়ে ঢুকবে।
 -- ══════════════════════════════════════════════════════════════
