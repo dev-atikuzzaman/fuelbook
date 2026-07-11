@@ -8,7 +8,7 @@ const TABS = [
   { key: "custom", label: "কাস্টম", icon: "🧩" },
 ];
 
-export default function TopNav({ active, onChange, isOnline }) {
+export default function TopNav({ active, onChange, isOnline, onLogout }) {
   return (
     <>
       {/* Desktop top bar */}
@@ -35,9 +35,18 @@ export default function TopNav({ active, onChange, isOnline }) {
             </button>
           ))}
         </nav>
-        <div className="flex items-center gap-2 text-xs">
+        <div className="flex items-center gap-3 text-xs">
           <span className={`w-2 h-2 rounded-full ${isOnline ? "bg-emerald-400" : "bg-red-400"}`} />
           <span className="text-cream/60">{isOnline ? "লাইভ সিঙ্ক" : "অফলাইন"}</span>
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              className="text-cream/50 hover:text-red-300 border border-cream/15 hover:border-red-400/40 rounded-lg px-2.5 py-1"
+              title="লগআউট"
+            >
+              🚪 লগআউট
+            </button>
+          )}
         </div>
       </header>
 
@@ -46,7 +55,14 @@ export default function TopNav({ active, onChange, isOnline }) {
         <h1 className="font-display text-lg text-gold-400">
           আমার <span className="text-cream">অভিধান</span>
         </h1>
-        <span className={`w-2 h-2 rounded-full ${isOnline ? "bg-emerald-400" : "bg-red-400"}`} />
+        <div className="flex items-center gap-2.5">
+          <span className={`w-2 h-2 rounded-full ${isOnline ? "bg-emerald-400" : "bg-red-400"}`} />
+          {onLogout && (
+            <button onClick={onLogout} className="text-cream/50 text-lg" title="লগআউট">
+              🚪
+            </button>
+          )}
+        </div>
       </header>
 
       {/* Mobile bottom tab bar */}

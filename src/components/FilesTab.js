@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "../lib/supabase";
-import { uploadGenericFile, getFilePublicUrl, deleteGenericFile } from "../lib/storage";
+import { uploadGenericFile, getFilePublicUrl, deleteGenericFile, deleteFilesBulk } from "../lib/storage";
 
 function humanSize(bytes) {
   if (!bytes) return "0 B";
@@ -129,6 +129,23 @@ export default function FilesTab({ onToast }) {
     }
   }
 
+  async function handleDeleteFolder(name, e) {
+    e.stopPropagation();
+    const prefix = currentFolder ? `${currentFolder}/${name}` : name;
+    const rows = files.filter((f) => f.folder_path === prefix || f.folder_path.startsWith(prefix + "/"));
+    const confirmMsg =
+      rows.length > 0
+        ? `"${name}" ফোল্ডার ও এর ভেতরের ${rows.length}টি ফাইল সম্পূর্ণ মুছে ফেলবে? এটা আর ফিরিয়ে আনা যাবে না।`
+        : `"${name}" ফোল্ডারটা মুছে ফেলবে?`;
+    if (!window.confirm(confirmMsg)) return;
+    try {
+      if (rows.length > 0) await deleteFilesBulk(rows);
+      onToast({ type: "success", message: "ফোল্ডার মুছে ফেলা হয়েছে" });
+    } catch (err) {
+      onToast({ type: "error", message: "ফোল্ডার ডিলিট ব্যর্থ: " + err.message });
+    }
+  }
+
   function enterFolder(name) {
     setCurrentFolder((prev) => (prev ? `${prev}/${name}` : name));
     setSearch("");
@@ -233,14 +250,22 @@ export default function FilesTab({ onToast }) {
       ) : (
         <div className="grid sm:grid-cols-2 gap-3">
           {subfolders.map((f) => (
-            <button
+            <div
               key={f}
-              onClick={() => enterFolder(f)}
-              className="glass-card rounded-xl p-3.5 flex items-center gap-3 hover:border-gold-500/40 text-left"
+              className="glass-card rounded-xl p-3.5 flex items-center gap-3 hover:border-gold-500/40 relative"
             >
-              <span className="text-2xl">📂</span>
-              <span className="text-cream font-medium truncate">{f}</span>
-            </button>
+              <button onClick={() => enterFolder(f)} className="flex items-center gap-3 flex-1 min-w-0 text-left">
+                <span className="text-2xl">📂</span>
+                <span className="text-cream font-medium truncate">{f}</span>
+              </button>
+              <button
+                onClick={(e) => handleDeleteFolder(f, e)}
+                className="text-red-400/70 hover:text-red-300 text-lg px-1 shrink-0"
+                title="ফোল্ডার মুছে ফেলো"
+              >
+                🗑️
+              </button>
+            </div>
           ))}
           {filesHere.map((f) => (
             <div key={f.id} className="glass-card rounded-xl p-3.5 flex items-center gap-3">
