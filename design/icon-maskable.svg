@@ -14,10 +14,10 @@
     </linearGradient>
   </defs>
 
-  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
-  <rect width="512" height="512" rx="112" fill="url(#glow)"/>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <rect width="512" height="512" fill="url(#glow)"/>
 
-  <g transform="translate(256,300)">
+  <g transform="translate(256,300) scale(0.82)">
     <path d="M -150 -68 C -150 -94 -129 -99 -99 -94 C -68 -89 -18 -78 -5 -58 L -5 92 C -18 72 -68 61 -99 56 C -129 51 -150 46 -150 20 Z" fill="url(#gold)"/>
     <path d="M 150 -68 C 150 -94 129 -99 99 -94 C 68 -89 18 -78 5 -58 L 5 92 C 18 72 68 61 99 56 C 129 51 150 46 150 20 Z" fill="url(#gold)"/>
     <rect x="-5" y="-60" width="10" height="152" fill="#c98700" opacity="0.45"/>
@@ -29,9 +29,9 @@
     <line x1="124" y1="-1" x2="34" y2="10" stroke="#123a28" stroke-width="6" stroke-linecap="round" opacity="0.55"/>
   </g>
 
-  <path d="M 224 66 L 224 190 L 256 163 L 288 190 L 288 66 Z" fill="#e2453c"/>
+  <path d="M 226 90 L 226 200 L 256 176 L 286 200 L 286 90 Z" fill="#e2453c"/>
 
   <g fill="#ffe08a">
-    <path d="M 394 92 L 403 114 L 425 123 L 403 132 L 394 154 L 385 132 L 363 123 L 385 114 Z"/>
+    <path d="M 390 108 L 398 128 L 418 136 L 398 144 L 390 164 L 382 144 L 362 136 L 382 128 Z"/>
   </g>
 </svg>
