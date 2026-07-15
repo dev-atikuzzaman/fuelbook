@@ -33,9 +33,11 @@ create table if not exists public.files (
   folder_path text not null default '',    -- ভার্চুয়াল ফোল্ডার, যেমন "নথি/ব্যাংক"
   size        bigint default 0,
   mime_type   text default '',
+  tags        text[] not null default '{}',
   created_at  timestamptz not null default now()
 );
 create index if not exists idx_files_folder on public.files (folder_path);
+create index if not exists idx_files_tags on public.files using gin (tags);
 
 -- ── ৩) কাস্টম টেমপ্লেট/টপিক ────────────────────────────────────────
 create table if not exists public.custom_templates (
@@ -52,20 +54,36 @@ create table if not exists public.custom_entries (
   title         text not null,
   main_text     text default '',
   main_image_url text,
+  tags          text[] not null default '{}',
   created_at    timestamptz not null default now(),
   updated_at    timestamptz not null default now()
 );
 create index if not exists idx_custom_entries_template on public.custom_entries (template_id);
+create index if not exists idx_custom_entries_tags on public.custom_entries using gin (tags);
 
--- ── ৫) প্রতিটা এন্ট্রির জন্য ইচ্ছামতো কাস্টম ফিল্ড (key-value) ──────
-create table if not exists public.custom_fields (
-  id          uuid primary key default gen_random_uuid(),
-  entry_id    uuid not null references public.custom_entries(id) on delete cascade,
-  field_name  text not null,
-  field_value text default '',
-  field_order int not null default 0
+-- ── ৫) টেমপ্লেট ফিল্ড বিল্ডার — প্রতিটা টেমপ্লেটের নিজস্ব কাস্টম ফিল্ড স্কিমা ──
+-- field_type: text, textarea, number, date, dropdown, radio, checkbox, image
+create table if not exists public.custom_template_fields (
+  id           uuid primary key default gen_random_uuid(),
+  template_id  uuid not null references public.custom_templates(id) on delete cascade,
+  label        text not null,
+  field_type   text not null default 'text'
+               check (field_type in ('text','textarea','number','date','dropdown','radio','checkbox','image')),
+  options      text[] not null default '{}',  -- dropdown/radio এর জন্য অপশন লিস্ট
+  field_order  int not null default 0,
+  created_at   timestamptz not null default now()
 );
-create index if not exists idx_custom_fields_entry on public.custom_fields (entry_id);
+create index if not exists idx_template_fields_template on public.custom_template_fields (template_id);
+
+-- ── ৬) প্রতিটা এন্ট্রিতে প্রতিটা টেমপ্লেট-ফিল্ডের আসল মান ───────────
+create table if not exists public.custom_field_values (
+  id                 uuid primary key default gen_random_uuid(),
+  entry_id           uuid not null references public.custom_entries(id) on delete cascade,
+  template_field_id  uuid not null references public.custom_template_fields(id) on delete cascade,
+  value              text default '',
+  unique (entry_id, template_field_id)
+);
+create index if not exists idx_field_values_entry on public.custom_field_values (entry_id);
 
 -- ── updated_at অটো-আপডেট ট্রিগার ─────────────────────────────────
 create or replace function public.touch_updated_at()
@@ -91,7 +109,7 @@ create trigger trg_touch_custom_entries before update on public.custom_entries
 do $$
 declare t text;
 begin
-  foreach t in array array['dictionary_entries','files','custom_templates','custom_entries','custom_fields'] loop
+  foreach t in array array['dictionary_entries','files','custom_templates','custom_entries','custom_template_fields','custom_field_values'] loop
     execute format('alter table public.%I enable row level security;', t);
     execute format('drop policy if exists "anon_full_access" on public.%I;', t);
     execute format('drop policy if exists "authenticated_full_access" on public.%I;', t);
@@ -105,7 +123,8 @@ alter publication supabase_realtime add table public.dictionary_entries;
 alter publication supabase_realtime add table public.files;
 alter publication supabase_realtime add table public.custom_templates;
 alter publication supabase_realtime add table public.custom_entries;
-alter publication supabase_realtime add table public.custom_fields;
+alter publication supabase_realtime add table public.custom_template_fields;
+alter publication supabase_realtime add table public.custom_field_values;
 
 -- ── STORAGE BUCKETS ───────────────────────────────────────────────
 insert into storage.buckets (id, name, public)
