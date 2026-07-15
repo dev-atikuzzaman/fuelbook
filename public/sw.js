@@ -1,5 +1,5 @@
 const CACHE = "amar-obhidhan-v1";
-const SHELL = ["/", "/index.html", "/manifest.json", "/logo192.png", "/logo512.png"];
+const SHELL = ["/", "/index.html", "/manifest.json", "/favicon.png", "/logo192.png", "/logo512.png", "/maskable-icon.png"];
 
 self.addEventListener("install", (e) => {
   self.skipWaiting();
