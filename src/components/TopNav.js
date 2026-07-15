@@ -8,13 +8,13 @@ const TABS = [
   { key: "custom", label: "কাস্টম", icon: "🧩" },
 ];
 
-export default function TopNav({ active, onChange, isOnline, onLogout }) {
+export default function TopNav({ active, onChange, isOnline, onLogout, onOpenAdmin }) {
   return (
     <>
       {/* Desktop top bar */}
       <header className="hidden md:flex items-center justify-between px-8 py-4 glass-card border-b border-gold-500/10 sticky top-0 z-40">
         <div className="flex items-center gap-3">
-          <span className="text-2xl">📚</span>
+          <img src="/logo192.png" alt="" className="w-8 h-8 rounded-lg" />
           <h1 className="font-display text-xl text-gold-400 tracking-wide">
             আমার <span className="text-cream">অভিধান</span>
           </h1>
@@ -38,6 +38,15 @@ export default function TopNav({ active, onChange, isOnline, onLogout }) {
         <div className="flex items-center gap-3 text-xs">
           <span className={`w-2 h-2 rounded-full ${isOnline ? "bg-emerald-400" : "bg-red-400"}`} />
           <span className="text-cream/60">{isOnline ? "লাইভ সিঙ্ক" : "অফলাইন"}</span>
+          {onOpenAdmin && (
+            <button
+              onClick={onOpenAdmin}
+              className="text-gold-400/80 hover:text-gold-300 border border-gold-500/20 hover:border-gold-500/40 rounded-lg px-2.5 py-1"
+              title="এডমিন প্যানেল"
+            >
+              👤 এডমিন
+            </button>
+          )}
           {onLogout && (
             <button
               onClick={onLogout}
@@ -52,11 +61,19 @@ export default function TopNav({ active, onChange, isOnline, onLogout }) {
 
       {/* Mobile top title bar */}
       <header className="md:hidden flex items-center justify-between px-4 py-3 glass-card border-b border-gold-500/10 sticky top-0 z-40">
-        <h1 className="font-display text-lg text-gold-400">
-          আমার <span className="text-cream">অভিধান</span>
-        </h1>
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2">
+          <img src="/logo192.png" alt="" className="w-7 h-7 rounded-lg" />
+          <h1 className="font-display text-lg text-gold-400">
+            আমার <span className="text-cream">অভিধান</span>
+          </h1>
+        </div>
+        <div className="flex items-center gap-3">
           <span className={`w-2 h-2 rounded-full ${isOnline ? "bg-emerald-400" : "bg-red-400"}`} />
+          {onOpenAdmin && (
+            <button onClick={onOpenAdmin} className="text-gold-400/80 text-lg" title="এডমিন প্যানেল">
+              👤
+            </button>
+          )}
           {onLogout && (
             <button onClick={onLogout} className="text-cream/50 text-lg" title="লগআউট">
               🚪

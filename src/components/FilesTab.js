@@ -26,11 +26,56 @@ function iconFor(mime, name) {
   return "📄";
 }
 
+function TagEditor({ file, onToast }) {
+  const [tagInput, setTagInput] = useState("");
+  const tags = file.tags || [];
+
+  async function saveTags(next) {
+    const { error } = await supabase.from("files").update({ tags: next }).eq("id", file.id);
+    if (error) onToast({ type: "error", message: "ট্যাগ সেভ ব্যর্থ: " + error.message });
+  }
+  function addTag() {
+    const t = tagInput.trim();
+    if (!t || tags.includes(t)) {
+      setTagInput("");
+      return;
+    }
+    saveTags([...tags, t]);
+    setTagInput("");
+  }
+  function removeTag(t) {
+    saveTags(tags.filter((x) => x !== t));
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+      {tags.map((t) => (
+        <span
+          key={t}
+          onClick={() => removeTag(t)}
+          className="text-[10px] bg-gold-500/15 text-gold-400 px-2 py-0.5 rounded-full cursor-pointer hover:bg-red-500/20 hover:text-red-300"
+        >
+          #{t} ✕
+        </span>
+      ))}
+      <input
+        value={tagInput}
+        onChange={(e) => setTagInput(e.target.value)}
+        onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addTag())}
+        onBlur={addTag}
+        placeholder="+ ট্যাগ"
+        className="text-[10px] bg-transparent border-b border-dashed border-cream/20 w-14 text-cream/70 placeholder:text-cream/30"
+      />
+    </div>
+  );
+}
+
 export default function FilesTab({ onToast }) {
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentFolder, setCurrentFolder] = useState(""); // '' = root
   const [search, setSearch] = useState("");
+  const [activeTag, setActiveTag] = useState("সব");
   const [uploading, setUploading] = useState(false);
   const [progressText, setProgressText] = useState("");
   const [newFolderInput, setNewFolderInput] = useState("");
@@ -60,6 +105,8 @@ export default function FilesTab({ onToast }) {
       .on("postgres_changes", { event: "*", schema: "public", table: "files" }, (payload) => {
         if (payload.eventType === "INSERT") {
           setFiles((prev) => (prev.some((f) => f.id === payload.new.id) ? prev : [payload.new, ...prev]));
+        } else if (payload.eventType === "UPDATE") {
+          setFiles((prev) => prev.map((f) => (f.id === payload.new.id ? payload.new : f)));
         } else if (payload.eventType === "DELETE") {
           setFiles((prev) => prev.filter((f) => f.id !== payload.old.id));
         }
@@ -72,8 +119,26 @@ export default function FilesTab({ onToast }) {
     };
   }, []);
 
-  // derive subfolders visible at currentFolder level
+  const allTags = useMemo(() => {
+    const s = new Set();
+    files.forEach((f) => (f.tags || []).forEach((t) => s.add(t)));
+    return ["সব", ...Array.from(s)];
+  }, [files]);
+
+  // derive subfolders visible at currentFolder level, or a flat global-filtered list when searching/tag-filtering
   const { subfolders, filesHere } = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const tagActive = activeTag !== "সব";
+
+    if (q || tagActive) {
+      const list = files.filter((f) => {
+        const matchesSearch = !q || f.name.toLowerCase().includes(q);
+        const matchesTag = !tagActive || (f.tags || []).includes(activeTag);
+        return matchesSearch && matchesTag;
+      });
+      return { subfolders: [], filesHere: list };
+    }
+
     const prefix = currentFolder ? currentFolder + "/" : "";
     const folderSet = new Set();
     const here = [];
@@ -88,11 +153,8 @@ export default function FilesTab({ onToast }) {
         folderSet.add(next);
       }
     });
-    let list = here;
-    const q = search.trim().toLowerCase();
-    if (q) list = files.filter((f) => f.name.toLowerCase().includes(q));
-    return { subfolders: Array.from(folderSet).sort(), filesHere: list };
-  }, [files, currentFolder, search]);
+    return { subfolders: Array.from(folderSet).sort(), filesHere: here };
+  }, [files, currentFolder, search, activeTag]);
 
   async function handleFilesSelected(fileList, isFolder) {
     const arr = Array.from(fileList || []);
@@ -157,8 +219,6 @@ export default function FilesTab({ onToast }) {
   function createEmptyFolder() {
     const name = newFolderInput.trim();
     if (!name) return;
-    // "virtual" folder — will appear once a file is placed inside; we simulate
-    // by just navigating in; folders only persist once they contain a file.
     enterFolder(name);
     setNewFolderInput("");
     setShowNewFolder(false);
@@ -166,6 +226,7 @@ export default function FilesTab({ onToast }) {
   }
 
   const crumbs = currentFolder.split("/").filter(Boolean);
+  const browsingFiltered = search.trim() !== "" || activeTag !== "সব";
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-5 pb-24 md:pb-8">
@@ -183,6 +244,23 @@ export default function FilesTab({ onToast }) {
           placeholder="🔍 ফাইলের নাম দিয়ে খুঁজো..."
           className="w-full bg-ink-950/50 border border-gold-500/10 rounded-lg px-3 py-2 text-cream placeholder:text-cream/30 focus:border-gold-500/50"
         />
+        {allTags.length > 1 && (
+          <div className="flex gap-1.5 overflow-x-auto scrollbar-none">
+            {allTags.map((t) => (
+              <button
+                key={t}
+                onClick={() => setActiveTag(t)}
+                className={`shrink-0 text-xs px-3 py-1 rounded-full border transition-all ${
+                  activeTag === t
+                    ? "bg-gold-500 text-ink-950 border-gold-500"
+                    : "border-gold-500/20 text-cream/60 hover:text-cream"
+                }`}
+              >
+                {t === "সব" ? "সব" : `#${t}`}
+              </button>
+            ))}
+          </div>
+        )}
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => fileInputRef.current?.click()}
@@ -230,20 +308,22 @@ export default function FilesTab({ onToast }) {
         {uploading && <p className="text-xs text-gold-400 animate-pulse">{progressText || "আপলোড হচ্ছে..."}</p>}
       </div>
 
-      {/* breadcrumb */}
-      <div className="flex items-center gap-1 text-sm mb-3 text-cream/60 flex-wrap">
-        <button onClick={() => setCurrentFolder("")} className="hover:text-gold-400">
-          🏠 হোম
-        </button>
-        {crumbs.map((c, i) => (
-          <React.Fragment key={i}>
-            <span>/</span>
-            <button onClick={() => goBreadcrumb(i + 1)} className="hover:text-gold-400">
-              {c}
-            </button>
-          </React.Fragment>
-        ))}
-      </div>
+      {/* breadcrumb (hidden while search/tag filtering is active — shows global results instead) */}
+      {!browsingFiltered && (
+        <div className="flex items-center gap-1 text-sm mb-3 text-cream/60 flex-wrap">
+          <button onClick={() => setCurrentFolder("")} className="hover:text-gold-400">
+            🏠 হোম
+          </button>
+          {crumbs.map((c, i) => (
+            <React.Fragment key={i}>
+              <span>/</span>
+              <button onClick={() => goBreadcrumb(i + 1)} className="hover:text-gold-400">
+                {c}
+              </button>
+            </React.Fragment>
+          ))}
+        </div>
+      )}
 
       {loading ? (
         <p className="text-cream/40 text-center py-10">লোড হচ্ছে...</p>
@@ -268,35 +348,38 @@ export default function FilesTab({ onToast }) {
             </div>
           ))}
           {filesHere.map((f) => (
-            <div key={f.id} className="glass-card rounded-xl p-3.5 flex items-center gap-3">
-              <span className="text-2xl shrink-0">{iconFor(f.mime_type, f.name)}</span>
-              <div className="min-w-0 flex-1">
-                <p className="text-cream text-sm font-medium truncate">{f.name}</p>
-                <p className="text-cream/40 text-xs">{humanSize(f.size)}</p>
+            <div key={f.id} className="glass-card rounded-xl p-3.5">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl shrink-0">{iconFor(f.mime_type, f.name)}</span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-cream text-sm font-medium truncate">{f.name}</p>
+                  <p className="text-cream/40 text-xs">{humanSize(f.size)}</p>
+                </div>
+                <a
+                  href={getFilePublicUrl(f.path)}
+                  target="_blank"
+                  rel="noreferrer"
+                  download={f.name}
+                  className="text-gold-400 hover:text-gold-300 text-lg px-1"
+                  title="ডাউনলোড"
+                >
+                  ⬇️
+                </a>
+                <button
+                  onClick={() => handleDelete(f)}
+                  className="text-red-400 hover:text-red-300 text-lg px-1"
+                  title="মুছে ফেলো"
+                >
+                  🗑️
+                </button>
               </div>
-              <a
-                href={getFilePublicUrl(f.path)}
-                target="_blank"
-                rel="noreferrer"
-                download={f.name}
-                className="text-gold-400 hover:text-gold-300 text-lg px-1"
-                title="ডাউনলোড"
-              >
-                ⬇️
-              </a>
-              <button
-                onClick={() => handleDelete(f)}
-                className="text-red-400 hover:text-red-300 text-lg px-1"
-                title="মুছে ফেলো"
-              >
-                🗑️
-              </button>
+              <TagEditor file={f} onToast={onToast} />
             </div>
           ))}
           {subfolders.length === 0 && filesHere.length === 0 && (
             <div className="col-span-2 text-center py-14 text-cream/40">
               <p className="text-3xl mb-2">📭</p>
-              <p>এই ফোল্ডারে এখনো কিছু নেই।</p>
+              <p>{browsingFiltered ? "কোনো ফাইল পাওয়া যায়নি।" : "এই ফোল্ডারে এখনো কিছু নেই।"}</p>
             </div>
           )}
         </div>
