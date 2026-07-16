@@ -41,16 +41,30 @@ export default function DictionaryTab({ dictType, onToast }) {
       .channel(`dict_${dictType}_changes`)
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "dictionary_entries", filter: `dict_type=eq.${dictType}` },
+        // ⚠️ dict_type দিয়ে সার্ভার-সাইড ফিল্টার করা হচ্ছে না ইচ্ছাকৃতভাবে —
+        // কোনো এন্ট্রি অন্য ডিকশনারিতে "সরানো" হলে dict_type বদলে যায়, তখন
+        // সার্ভার-সাইড ফিল্টার দিয়ে পুরনো ট্যাব থেকে সেটা সরানোর ইভেন্ট আসে না।
+        // তাই পুরো টেবিলের changes শুনে ক্লায়েন্ট-সাইডে dict_type চেক করা হচ্ছে।
+        { event: "*", schema: "public", table: "dictionary_entries" },
         (payload) => {
           if (payload.eventType === "INSERT") {
+            if (payload.new.dict_type !== dictType) return;
             setEntries((prev) =>
               prev.some((e) => e.id === payload.new.id)
                 ? prev
                 : [...prev, payload.new].sort((a, b) => a.term.localeCompare(b.term, "bn"))
             );
           } else if (payload.eventType === "UPDATE") {
-            setEntries((prev) => prev.map((e) => (e.id === payload.new.id ? payload.new : e)));
+            const belongsHere = payload.new.dict_type === dictType;
+            setEntries((prev) => {
+              const existed = prev.some((e) => e.id === payload.new.id);
+              if (belongsHere) {
+                if (existed) return prev.map((e) => (e.id === payload.new.id ? payload.new : e));
+                return [...prev, payload.new].sort((a, b) => a.term.localeCompare(b.term, "bn"));
+              }
+              // অন্য ডিকশনারিতে সরে গেছে — এখান থেকে বাদ দাও
+              return existed ? prev.filter((e) => e.id !== payload.new.id) : prev;
+            });
           } else if (payload.eventType === "DELETE") {
             setEntries((prev) => prev.filter((e) => e.id !== payload.old.id));
           }

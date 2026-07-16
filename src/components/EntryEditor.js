@@ -11,6 +11,12 @@ const SUBTABS = [
   { key: "misc", label: "বিবিধ", field: "misc", icon: "🗂️" },
 ];
 
+const DICT_LABELS = {
+  general: { label: "সাধারণ", icon: "📖" },
+  technical: { label: "টেকনিক্যাল", icon: "⚙️" },
+  government: { label: "সরকারি", icon: "🏛️" },
+};
+
 const emptyForm = {
   term: "",
   term_image_url: "",
@@ -29,8 +35,11 @@ export default function EntryEditor({ dictType, entry, onClose, onToast }) {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [tagInput, setTagInput] = useState("");
+  const [transferOpen, setTransferOpen] = useState(false);
+  const [transferring, setTransferring] = useState(false);
   const scrollerRef = useRef(null);
   const isNew = !entry;
+  const otherDicts = Object.keys(DICT_LABELS).filter((d) => d !== dictType);
 
   useEffect(() => {
     setForm(entry ? { ...emptyForm, ...entry } : emptyForm);
@@ -115,6 +124,54 @@ export default function EntryEditor({ dictType, entry, onClose, onToast }) {
       onClose();
     } catch (err) {
       onToast({ type: "error", message: "ডিলিট ব্যর্থ: " + err.message });
+    }
+  }
+
+  async function handleTransfer(targetDict, mode) {
+    if (!entry || !supabase) return;
+    if (!form.term.trim()) {
+      onToast({ type: "error", message: "শব্দ/টার্ম লিখো আগে" });
+      return;
+    }
+    setTransferring(true);
+    // বর্তমান ফর্মের সব ডাটা (কোনো আনসেভড এডিটসহ) হুবহু নতুন ডিকশনারিতে যাবে —
+    // কোনো কিছু বাদ পড়বে না বা হাত দিয়ে আবার লিখতে হবে না
+    const payload = {
+      term: form.term.trim(),
+      term_image_url: form.term_image_url || null,
+      meaning: form.meaning,
+      explanation: form.explanation,
+      analogy: form.analogy,
+      application: form.application,
+      example: form.example,
+      misc: form.misc,
+      tags: form.tags,
+    };
+    try {
+      if (mode === "move") {
+        const { error } = await supabase
+          .from("dictionary_entries")
+          .update({ ...payload, dict_type: targetDict })
+          .eq("id", entry.id);
+        if (error) throw error;
+        onToast({
+          type: "success",
+          message: `"${DICT_LABELS[dictType].label}" থেকে "${DICT_LABELS[targetDict].label}" ডিকশনারিতে সরানো হয়েছে ✅`,
+        });
+      } else {
+        const { error } = await supabase.from("dictionary_entries").insert({ ...payload, dict_type: targetDict });
+        if (error) throw error;
+        onToast({
+          type: "success",
+          message: `"${DICT_LABELS[targetDict].label}" ডিকশনারিতে কপি হয়েছে ✅ (মূল এন্ট্রি এখানেই আছে)`,
+        });
+      }
+      onClose();
+    } catch (err) {
+      onToast({ type: "error", message: "ট্রান্সফার ব্যর্থ: " + err.message });
+    } finally {
+      setTransferring(false);
+      setTransferOpen(false);
     }
   }
 
@@ -230,6 +287,48 @@ export default function EntryEditor({ dictType, entry, onClose, onToast }) {
             className="flex-1 min-h-[220px] w-full bg-ink-950/50 border border-gold-500/10 rounded-xl p-3 text-cream placeholder:text-cream/25 resize-none focus:border-gold-500/50"
           />
         </div>
+
+        {/* move/copy to another dictionary */}
+        {!isNew && (
+          <div className="border-t border-gold-500/10">
+            <button
+              onClick={() => setTransferOpen((v) => !v)}
+              className="w-full flex items-center justify-between px-4 py-2.5 text-xs text-gold-400/80 hover:text-gold-300"
+            >
+              <span>🔀 অন্য ডিকশনারিতে সরাও/কপি করো</span>
+              <span>{transferOpen ? "▲" : "▼"}</span>
+            </button>
+            {transferOpen && (
+              <div className="px-4 pb-3 flex flex-col gap-2">
+                {otherDicts.map((d) => (
+                  <div key={d} className="flex items-center justify-between glass-card rounded-lg px-3 py-2">
+                    <span className="text-sm text-cream/80 flex items-center gap-1.5">
+                      {DICT_LABELS[d].icon} {DICT_LABELS[d].label}
+                    </span>
+                    <div className="flex gap-2">
+                      <button
+                        disabled={transferring}
+                        onClick={() => handleTransfer(d, "copy")}
+                        className="text-xs border border-gold-500/30 text-gold-400 hover:bg-gold-500/10 px-2.5 py-1 rounded-lg disabled:opacity-50"
+                        title="দুই জায়গাতেই থাকবে"
+                      >
+                        📄 কপি
+                      </button>
+                      <button
+                        disabled={transferring}
+                        onClick={() => handleTransfer(d, "move")}
+                        className="text-xs bg-gold-500 hover:bg-gold-400 text-ink-950 font-medium px-2.5 py-1 rounded-lg disabled:opacity-50"
+                        title="এখান থেকে সরে যাবে"
+                      >
+                        ➡️ সরাও
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* footer actions */}
         <div className="flex items-center justify-between gap-2 p-4 border-t border-gold-500/10">
