@@ -11,11 +11,16 @@ export default function EntryCard({ entry, onClick }) {
       onClick={onClick}
       className="anim-in text-left glass-card rounded-xl p-3.5 hover:border-gold-500/40 hover:-translate-y-0.5 transition-all flex gap-3 items-start"
     >
-      <div className="w-12 h-12 rounded-lg bg-ink-800 border border-gold-500/15 shrink-0 overflow-hidden flex items-center justify-center">
-        {entry.term_image_url ? (
-          <img src={entry.term_image_url} alt="" className="w-full h-full object-cover" />
+      <div className="w-12 h-12 rounded-lg bg-ink-800 border border-gold-500/15 shrink-0 overflow-hidden flex items-center justify-center relative">
+        {entry.term_image_url || entry.gallery_images?.[0] ? (
+          <img src={entry.term_image_url || entry.gallery_images[0]} alt="" className="w-full h-full object-cover" />
         ) : (
           <span className="text-gold-400/50">📘</span>
+        )}
+        {entry.gallery_images?.length > 0 && (
+          <span className="absolute bottom-0 right-0 bg-black/70 text-gold-300 text-[9px] px-1 rounded-tl-md">
+            🖼️{entry.gallery_images.length}
+          </span>
         )}
       </div>
       <div className="min-w-0 flex-1">
