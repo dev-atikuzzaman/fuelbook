@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { uploadImage } from "../lib/storage";
+import ImageGallery from "./ImageGallery";
 
 const SUBTABS = [
   { key: "meaning", label: "অর্থ", field: "meaning", icon: "🔤" },
@@ -20,6 +21,7 @@ const DICT_LABELS = {
 const emptyForm = {
   term: "",
   term_image_url: "",
+  gallery_images: [],
   meaning: "",
   explanation: "",
   analogy: "",
@@ -85,6 +87,7 @@ export default function EntryEditor({ dictType, entry, onClose, onToast }) {
       dict_type: dictType,
       term: form.term.trim(),
       term_image_url: form.term_image_url || null,
+      gallery_images: form.gallery_images || [],
       meaning: form.meaning,
       explanation: form.explanation,
       analogy: form.analogy,
@@ -139,6 +142,7 @@ export default function EntryEditor({ dictType, entry, onClose, onToast }) {
     const payload = {
       term: form.term.trim(),
       term_image_url: form.term_image_url || null,
+      gallery_images: form.gallery_images || [],
       meaning: form.meaning,
       explanation: form.explanation,
       analogy: form.analogy,
@@ -285,6 +289,16 @@ export default function EntryEditor({ dictType, entry, onClose, onToast }) {
             onChange={(e) => update(activeField, e.target.value)}
             placeholder={`${SUBTABS[activeIndex].label} লেখো এখানে...`}
             className="flex-1 min-h-[220px] w-full bg-ink-950/50 border border-gold-500/10 rounded-xl p-3 text-cream placeholder:text-cream/25 resize-none focus:border-gold-500/50"
+          />
+        </div>
+
+        {/* multi-image gallery */}
+        <div className="border-t border-gold-500/10 px-4 py-1">
+          <ImageGallery
+            images={form.gallery_images}
+            onChange={(imgs) => update("gallery_images", imgs)}
+            folder={`dictionary/${dictType}/gallery`}
+            onToast={onToast}
           />
         </div>
 
