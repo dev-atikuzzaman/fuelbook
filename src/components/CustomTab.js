@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { uploadImage } from "../lib/storage";
+import ImageGallery from "./ImageGallery";
 
 const FIELD_TYPES = [
   { value: "text", label: "টেক্সট (এক লাইন)", icon: "🔤" },
@@ -379,6 +380,7 @@ function CustomEntryEditor({ template, entry, onClose, onToast }) {
   const [title, setTitle] = useState(entry?.title || "");
   const [mainText, setMainText] = useState(entry?.main_text || "");
   const [mainImage, setMainImage] = useState(entry?.main_image_url || "");
+  const [galleryImages, setGalleryImages] = useState(entry?.gallery_images || []);
   const [tags, setTags] = useState(entry?.tags || []);
   const [tagInput, setTagInput] = useState("");
   const [templateFields, setTemplateFields] = useState([]);
@@ -463,7 +465,13 @@ function CustomEntryEditor({ template, entry, onClose, onToast }) {
     setSaving(true);
     try {
       let entryId = entry?.id;
-      const payload = { title: title.trim(), main_text: mainText, main_image_url: mainImage || null, tags };
+      const payload = {
+        title: title.trim(),
+        main_text: mainText,
+        main_image_url: mainImage || null,
+        gallery_images: galleryImages,
+        tags,
+      };
       if (isNew) {
         const { data, error } = await supabase
           .from("custom_entries")
@@ -563,6 +571,13 @@ function CustomEntryEditor({ template, entry, onClose, onToast }) {
               className="w-full bg-ink-950/50 border border-gold-500/10 rounded-xl p-3 text-cream placeholder:text-cream/25 resize-none focus:border-gold-500/50"
             />
           </div>
+
+          <ImageGallery
+            images={galleryImages}
+            onChange={setGalleryImages}
+            folder={`custom/${template.id}/gallery`}
+            onToast={onToast}
+          />
 
           {loadingFields ? (
             <p className="text-cream/40 text-sm">ফিল্ড লোড হচ্ছে...</p>
@@ -775,8 +790,17 @@ export default function CustomTab({ onToast }) {
                 onClick={() => setEditingEntry(e)}
                 className="anim-in text-left glass-card rounded-xl p-3.5 hover:border-gold-500/40 flex gap-3 items-start"
               >
-                <div className="w-12 h-12 rounded-lg bg-ink-800 border border-gold-500/15 shrink-0 overflow-hidden flex items-center justify-center">
-                  {e.main_image_url ? <img src={e.main_image_url} alt="" className="w-full h-full object-cover" /> : <span className="text-gold-400/50">🧩</span>}
+                <div className="w-12 h-12 rounded-lg bg-ink-800 border border-gold-500/15 shrink-0 overflow-hidden flex items-center justify-center relative">
+                  {e.main_image_url || e.gallery_images?.[0] ? (
+                    <img src={e.main_image_url || e.gallery_images[0]} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-gold-400/50">🧩</span>
+                  )}
+                  {e.gallery_images?.length > 0 && (
+                    <span className="absolute bottom-0 right-0 bg-black/70 text-gold-300 text-[9px] px-1 rounded-tl-md">
+                      🖼️{e.gallery_images.length}
+                    </span>
+                  )}
                 </div>
                 <div className="min-w-0 flex-1">
                   <h3 className="font-display text-cream font-semibold truncate">{e.title}</h3>
