@@ -19,6 +19,34 @@ export async function uploadImage(file, folder = "misc") {
   return data.publicUrl;
 }
 
+// একসাথে একাধিক ছবি আপলোড করার জন্য — গ্যালারি ফিচারে ব্যবহার হয়।
+// onProgress(doneCount, totalCount) দিয়ে চাইলে প্রগ্রেস দেখানো যায়।
+export async function uploadMultipleImages(fileList, folder = "misc", onProgress) {
+  const files = Array.from(fileList || []);
+  const urls = [];
+  for (let i = 0; i < files.length; i++) {
+    const url = await uploadImage(files[i], folder);
+    urls.push(url);
+    if (onProgress) onProgress(i + 1, files.length);
+  }
+  return urls;
+}
+
+// public URL থেকে bucket-এর ভেতরের path বের করে সেই ছবিটা storage থেকে মুছে ফেলে
+// (গ্যালারি থেকে একটা ছবি রিমুভ করার সময় ব্যবহার হয়; ব্যর্থ হলেও নীরবে এগিয়ে যায়)
+export async function deleteImageByUrl(url) {
+  if (!supabase || !url) return;
+  const marker = `/${IMAGES_BUCKET}/`;
+  const idx = url.indexOf(marker);
+  if (idx === -1) return;
+  const path = url.slice(idx + marker.length);
+  try {
+    await supabase.storage.from(IMAGES_BUCKET).remove([path]);
+  } catch {
+    // ব্যর্থ হলে সমস্যা নেই — শুধু রেফারেন্স মোছাই যথেষ্ট
+  }
+}
+
 // সাধারণ যেকোনো ফাইল/ফোল্ডার আপলোডের জন্য — files টেবিলে metadata সেভ হয়
 export async function uploadGenericFile(file, folderPath = "") {
   if (!supabase) throw new Error("Supabase কনফিগার করা নেই");
