@@ -80,6 +80,38 @@ export async function deleteGenericFile(row) {
   if (error) throw error;
 }
 
+// শুধু ডিসপ্লে নাম বদলায় — স্টোরেজের আসল path অপরিবর্তিত থাকে
+export async function renameGenericFile(row, newName) {
+  if (!supabase) throw new Error("Supabase কনফিগার করা নেই");
+  const { error } = await supabase.from("files").update({ name: newName }).eq("id", row.id);
+  if (error) throw error;
+}
+
+// শুধু ভার্চুয়াল ফোল্ডার (folder_path) বদলায় — আসল ফাইল স্টোরেজে সরানোর দরকার নেই
+export async function moveGenericFile(row, targetFolderPath) {
+  if (!supabase) throw new Error("Supabase কনফিগার করা নেই");
+  const { error } = await supabase.from("files").update({ folder_path: targetFolderPath }).eq("id", row.id);
+  if (error) throw error;
+}
+
+// Storage-এর নিজস্ব copy() দিয়ে সার্ভার-সাইডেই কপি হয় — আবার ডাউনলোড/আপলোড লাগে না
+export async function copyGenericFile(row, targetFolderPath, newName) {
+  if (!supabase) throw new Error("Supabase কনফিগার করা নেই");
+  const finalName = newName || row.name;
+  const newPath = `${targetFolderPath ? targetFolderPath + "/" : ""}${Date.now()}-${randomName(finalName)}`;
+  const { error: copyErr } = await supabase.storage.from(FILES_BUCKET).copy(row.path, newPath);
+  if (copyErr) throw copyErr;
+  const { error: dbErr } = await supabase.from("files").insert({
+    name: finalName,
+    path: newPath,
+    folder_path: targetFolderPath,
+    size: row.size,
+    mime_type: row.mime_type,
+    tags: row.tags || [],
+  });
+  if (dbErr) throw dbErr;
+}
+
 // একসাথে একাধিক ফাইল ডিলিট করার জন্য (ফোল্ডার মোছার সময় ব্যবহার হয়)
 export async function deleteFilesBulk(rows) {
   if (!supabase) throw new Error("Supabase কনফিগার করা নেই");
@@ -92,5 +124,14 @@ export async function deleteFilesBulk(rows) {
     await supabase.storage.from(FILES_BUCKET).remove(paths.slice(i, i + BATCH));
   }
   const { error } = await supabase.from("files").delete().in("id", ids);
+  if (error) throw error;
+}
+
+// একটা ফোল্ডারের ভেতরের সব ফাইলকে একসাথে অন্য ফোল্ডারে সরানোর জন্য
+export async function moveFilesBulk(rows, targetFolderPath) {
+  if (!supabase) throw new Error("Supabase কনফিগার করা নেই");
+  if (!rows || rows.length === 0) return;
+  const ids = rows.map((r) => r.id);
+  const { error } = await supabase.from("files").update({ folder_path: targetFolderPath }).in("id", ids);
   if (error) throw error;
 }
