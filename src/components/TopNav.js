@@ -1,4 +1,5 @@
 import React from "react";
+import Clock from "./Clock";
 
 const TABS = [
   { key: "general", label: "সাধারণ", icon: "📖" },
@@ -36,6 +37,7 @@ export default function TopNav({ active, onChange, isOnline, onLogout, onOpenAdm
           ))}
         </nav>
         <div className="flex items-center gap-3 text-xs">
+          <Clock />
           <span className={`w-2 h-2 rounded-full ${isOnline ? "bg-emerald-400" : "bg-red-400"}`} />
           <span className="text-cream/60">{isOnline ? "লাইভ সিঙ্ক" : "অফলাইন"}</span>
           {onOpenAdmin && (
@@ -60,26 +62,29 @@ export default function TopNav({ active, onChange, isOnline, onLogout, onOpenAdm
       </header>
 
       {/* Mobile top title bar */}
-      <header className="md:hidden flex items-center justify-between px-4 py-3 glass-card border-b border-gold-500/10 sticky top-0 z-40">
-        <div className="flex items-center gap-2">
-          <img src="/logo192.png" alt="" className="w-7 h-7 rounded-lg" />
-          <h1 className="font-display text-lg text-gold-400">
-            আমার <span className="text-cream">অভিধান</span>
-          </h1>
+      <header className="md:hidden glass-card border-b border-gold-500/10 sticky top-0 z-40">
+        <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex items-center gap-2">
+            <img src="/logo192.png" alt="" className="w-7 h-7 rounded-lg" />
+            <h1 className="font-display text-lg text-gold-400">
+              আমার <span className="text-cream">অভিধান</span>
+            </h1>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className={`w-2 h-2 rounded-full ${isOnline ? "bg-emerald-400" : "bg-red-400"}`} />
+            {onOpenAdmin && (
+              <button onClick={onOpenAdmin} className="text-gold-400/80 text-lg" title="এডমিন প্যানেল">
+                👤
+              </button>
+            )}
+            {onLogout && (
+              <button onClick={onLogout} className="text-cream/50 text-lg" title="লগআউট">
+                🚪
+              </button>
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-3">
-          <span className={`w-2 h-2 rounded-full ${isOnline ? "bg-emerald-400" : "bg-red-400"}`} />
-          {onOpenAdmin && (
-            <button onClick={onOpenAdmin} className="text-gold-400/80 text-lg" title="এডমিন প্যানেল">
-              👤
-            </button>
-          )}
-          {onLogout && (
-            <button onClick={onLogout} className="text-cream/50 text-lg" title="লগআউট">
-              🚪
-            </button>
-          )}
-        </div>
+        <Clock variant="mobile" />
       </header>
 
       {/* Mobile bottom tab bar */}
