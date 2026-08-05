@@ -634,6 +634,7 @@ export default function CustomTab({ onToast, focusTemplateId, focusEntryId, onFo
   const [templateEditorOpen, setTemplateEditorOpen] = useState(undefined); // undefined=closed, null=new, obj=edit
   const [search, setSearch] = useState("");
   const [activeTag, setActiveTag] = useState("সব");
+  const [onlyPinned, setOnlyPinned] = useState(false);
   const [editingEntry, setEditingEntry] = useState(undefined);
 
   useEffect(() => {
@@ -725,12 +726,21 @@ export default function CustomTab({ onToast, focusTemplateId, focusEntryId, onFo
 
   const filteredEntries = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return entries.filter((e) => {
-      const matchesSearch = !q || e.title.toLowerCase().includes(q) || (e.main_text || "").toLowerCase().includes(q);
-      const matchesTag = activeTag === "সব" || (e.tags || []).includes(activeTag);
-      return matchesSearch && matchesTag;
-    });
-  }, [entries, search, activeTag]);
+    return entries
+      .filter((e) => {
+        const matchesSearch = !q || e.title.toLowerCase().includes(q) || (e.main_text || "").toLowerCase().includes(q);
+        const matchesTag = activeTag === "সব" || (e.tags || []).includes(activeTag);
+        const matchesPinned = !onlyPinned || e.pinned;
+        return matchesSearch && matchesTag && matchesPinned;
+      })
+      .sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
+  }, [entries, search, activeTag, onlyPinned]);
+
+  async function toggleEntryPin(entry, e) {
+    e.stopPropagation();
+    if (!supabase) return;
+    await supabase.from("custom_entries").update({ pinned: !entry.pinned }).eq("id", entry.id);
+  }
 
   // ── VIEW: entries inside a selected template ──
   if (selectedTemplate) {
@@ -776,6 +786,16 @@ export default function CustomTab({ onToast, focusTemplateId, focusEntryId, onFo
           />
           {allTags.length > 1 && (
             <div className="flex gap-1.5 overflow-x-auto scrollbar-none">
+              <button
+                onClick={() => setOnlyPinned((v) => !v)}
+                className={`shrink-0 text-xs px-3 py-1 rounded-full border transition-all ${
+                  onlyPinned
+                    ? "bg-gold-500 text-ink-950 border-gold-500"
+                    : "border-gold-500/20 text-cream/60 hover:text-cream"
+                }`}
+              >
+                ⭐ শুধু পিন করা
+              </button>
               {allTags.map((t) => (
                 <button
                   key={t}
@@ -806,8 +826,17 @@ export default function CustomTab({ onToast, focusTemplateId, focusEntryId, onFo
               <button
                 key={e.id}
                 onClick={() => setEditingEntry(e)}
-                className="anim-in text-left glass-card rounded-xl p-3.5 hover:border-gold-500/40 flex gap-3 items-start"
+                className={`anim-in text-left glass-card rounded-xl p-3.5 hover:border-gold-500/40 flex gap-3 items-start relative ${
+                  e.pinned ? "border-gold-500/40" : ""
+                }`}
               >
+                <button
+                  onClick={(evt) => toggleEntryPin(e, evt)}
+                  className="absolute top-2 right-2 text-sm z-10"
+                  title={e.pinned ? "পিন সরাও" : "পিন করো"}
+                >
+                  {e.pinned ? "⭐" : <span className="text-cream/20 hover:text-gold-400/60">☆</span>}
+                </button>
                 <div className="w-12 h-12 rounded-lg bg-ink-800 border border-gold-500/15 shrink-0 overflow-hidden flex items-center justify-center relative">
                   {e.main_image_url || e.gallery_images?.[0] ? (
                     <img src={e.main_image_url || e.gallery_images[0]} alt="" className="w-full h-full object-cover" />
@@ -820,7 +849,7 @@ export default function CustomTab({ onToast, focusTemplateId, focusEntryId, onFo
                     </span>
                   )}
                 </div>
-                <div className="min-w-0 flex-1">
+                <div className="min-w-0 flex-1 pr-4">
                   <h3 className="font-display text-cream font-semibold truncate">{e.title}</h3>
                   <p className="text-cream/50 text-xs mt-1 line-clamp-2">{e.main_text || "বিস্তারিত দেখতে ক্লিক করো"}</p>
                   {e.tags?.length > 0 && (

@@ -14,6 +14,7 @@ export default function DictionaryTab({ dictType, onToast, focusEntryId, onFocus
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [activeTag, setActiveTag] = useState("সব");
+  const [onlyPinned, setOnlyPinned] = useState(false);
   const [editing, setEditing] = useState(null);
   const [showEditor, setShowEditor] = useState(false);
 
@@ -98,17 +99,20 @@ export default function DictionaryTab({ dictType, onToast, focusEntryId, onFocus
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return entries.filter((e) => {
-      const matchesSearch =
-        !q ||
-        e.term.toLowerCase().includes(q) ||
-        (e.meaning || "").toLowerCase().includes(q) ||
-        (e.explanation || "").toLowerCase().includes(q) ||
-        (e.tags || []).some((t) => t.toLowerCase().includes(q));
-      const matchesTag = activeTag === "সব" || (e.tags || []).includes(activeTag);
-      return matchesSearch && matchesTag;
-    });
-  }, [entries, search, activeTag]);
+    return entries
+      .filter((e) => {
+        const matchesSearch =
+          !q ||
+          e.term.toLowerCase().includes(q) ||
+          (e.meaning || "").toLowerCase().includes(q) ||
+          (e.explanation || "").toLowerCase().includes(q) ||
+          (e.tags || []).some((t) => t.toLowerCase().includes(q));
+        const matchesTag = activeTag === "সব" || (e.tags || []).includes(activeTag);
+        const matchesPinned = !onlyPinned || e.pinned;
+        return matchesSearch && matchesTag && matchesPinned;
+      })
+      .sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
+  }, [entries, search, activeTag, onlyPinned]);
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-5 pb-24 md:pb-8">
@@ -137,9 +141,19 @@ export default function DictionaryTab({ dictType, onToast, focusEntryId, onFocus
           placeholder="🔍 শব্দ, অর্থ বা ট্যাগ দিয়ে খুঁজো..."
           className="w-full bg-ink-950/50 border border-gold-500/10 rounded-lg px-3 py-2 text-cream placeholder:text-cream/30 focus:border-gold-500/50"
         />
-        {allTags.length > 1 && (
-          <div className="flex gap-1.5 overflow-x-auto scrollbar-none">
-            {allTags.map((t) => (
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <button
+            onClick={() => setOnlyPinned((v) => !v)}
+            className={`shrink-0 text-xs px-3 py-1 rounded-full border transition-all flex items-center gap-1 ${
+              onlyPinned
+                ? "bg-gold-500 text-ink-950 border-gold-500"
+                : "border-gold-500/20 text-cream/60 hover:text-cream"
+            }`}
+          >
+            ⭐ শুধু পিন করা
+          </button>
+          {allTags.length > 1 &&
+            allTags.map((t) => (
               <button
                 key={t}
                 onClick={() => setActiveTag(t)}
@@ -152,8 +166,7 @@ export default function DictionaryTab({ dictType, onToast, focusEntryId, onFocus
                 {t === "সব" ? "সব" : `#${t}`}
               </button>
             ))}
-          </div>
-        )}
+        </div>
       </div>
 
       {loading ? (

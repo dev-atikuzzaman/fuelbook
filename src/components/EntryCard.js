@@ -1,4 +1,5 @@
 import React from "react";
+import { supabase } from "../lib/supabase";
 
 export default function EntryCard({ entry, onClick }) {
   const preview = entry.meaning || entry.explanation || "এখনো কোনো তথ্য যোগ করা হয়নি...";
@@ -6,11 +7,26 @@ export default function EntryCard({ entry, onClick }) {
     (f) => (entry[f] || "").trim().length > 0
   ).length;
 
+  async function togglePin(e) {
+    e.stopPropagation();
+    if (!supabase) return;
+    await supabase.from("dictionary_entries").update({ pinned: !entry.pinned }).eq("id", entry.id);
+  }
+
   return (
     <button
       onClick={onClick}
-      className="anim-in text-left glass-card rounded-xl p-3.5 hover:border-gold-500/40 hover:-translate-y-0.5 transition-all flex gap-3 items-start"
+      className={`anim-in text-left glass-card rounded-xl p-3.5 hover:border-gold-500/40 hover:-translate-y-0.5 transition-all flex gap-3 items-start relative ${
+        entry.pinned ? "border-gold-500/40" : ""
+      }`}
     >
+      <button
+        onClick={togglePin}
+        className="absolute top-2 right-2 text-sm z-10"
+        title={entry.pinned ? "পিন সরাও" : "পিন করো"}
+      >
+        {entry.pinned ? "⭐" : <span className="text-cream/20 hover:text-gold-400/60">☆</span>}
+      </button>
       <div className="w-12 h-12 rounded-lg bg-ink-800 border border-gold-500/15 shrink-0 overflow-hidden flex items-center justify-center relative">
         {entry.term_image_url || entry.gallery_images?.[0] ? (
           <img src={entry.term_image_url || entry.gallery_images[0]} alt="" className="w-full h-full object-cover" />
@@ -23,7 +39,7 @@ export default function EntryCard({ entry, onClick }) {
           </span>
         )}
       </div>
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 pr-4">
         <div className="flex items-center justify-between gap-2">
           <h3 className="font-display text-cream font-semibold truncate">{entry.term}</h3>
           <span className="text-[10px] text-gold-400/70 shrink-0">{filled}/6</span>

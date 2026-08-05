@@ -333,6 +333,7 @@ export default function FilesTab({ onToast, focusFileId, onFocusHandled }) {
   const [currentFolder, setCurrentFolder] = useState("");
   const [search, setSearch] = useState("");
   const [activeTag, setActiveTag] = useState("সব");
+  const [onlyPinned, setOnlyPinned] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [progressText, setProgressText] = useState("");
   const [newFolderInput, setNewFolderInput] = useState("");
@@ -403,12 +404,15 @@ export default function FilesTab({ onToast, focusFileId, onFocusHandled }) {
     const q = search.trim().toLowerCase();
     const tagActive = activeTag !== "সব";
 
-    if (q || tagActive) {
-      const list = files.filter((f) => {
-        const matchesSearch = !q || f.name.toLowerCase().includes(q);
-        const matchesTag = !tagActive || (f.tags || []).includes(activeTag);
-        return matchesSearch && matchesTag;
-      });
+    if (q || tagActive || onlyPinned) {
+      const list = files
+        .filter((f) => {
+          const matchesSearch = !q || f.name.toLowerCase().includes(q);
+          const matchesTag = !tagActive || (f.tags || []).includes(activeTag);
+          const matchesPinned = !onlyPinned || f.pinned;
+          return matchesSearch && matchesTag && matchesPinned;
+        })
+        .sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
       return { subfolders: [], filesHere: list };
     }
 
@@ -426,8 +430,9 @@ export default function FilesTab({ onToast, focusFileId, onFocusHandled }) {
         folderSet.add(next);
       }
     });
+    here.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
     return { subfolders: Array.from(folderSet).sort(), filesHere: here };
-  }, [files, currentFolder, search, activeTag]);
+  }, [files, currentFolder, search, activeTag, onlyPinned]);
 
   async function handleFilesSelected(fileList, isFolder) {
     const arr = Array.from(fileList || []);
@@ -452,6 +457,12 @@ export default function FilesTab({ onToast, focusFileId, onFocusHandled }) {
     setProgressText("");
     setUploading(false);
     onToast({ type: "success", message: `${arr.length}টি ফাইল আপলোড সম্পন্ন ✅` });
+  }
+
+  async function togglePin(row) {
+    if (!supabase) return;
+    const { error } = await supabase.from("files").update({ pinned: !row.pinned }).eq("id", row.id);
+    if (error) onToast({ type: "error", message: "পিন ব্যর্থ: " + error.message });
   }
 
   async function handleDelete(row) {
@@ -536,7 +547,7 @@ export default function FilesTab({ onToast, focusFileId, onFocusHandled }) {
   }
 
   const crumbs = currentFolder.split("/").filter(Boolean);
-  const browsingFiltered = search.trim() !== "" || activeTag !== "সব";
+  const browsingFiltered = search.trim() !== "" || activeTag !== "সব" || onlyPinned;
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-5 pb-24 md:pb-8">
@@ -556,6 +567,16 @@ export default function FilesTab({ onToast, focusFileId, onFocusHandled }) {
         />
         {allTags.length > 1 && (
           <div className="flex gap-1.5 overflow-x-auto scrollbar-none">
+            <button
+              onClick={() => setOnlyPinned((v) => !v)}
+              className={`shrink-0 text-xs px-3 py-1 rounded-full border transition-all ${
+                onlyPinned
+                  ? "bg-gold-500 text-ink-950 border-gold-500"
+                  : "border-gold-500/20 text-cream/60 hover:text-cream"
+              }`}
+            >
+              ⭐ শুধু পিন করা
+            </button>
             {allTags.map((t) => (
               <button
                 key={t}
@@ -654,7 +675,7 @@ export default function FilesTab({ onToast, focusFileId, onFocusHandled }) {
             </div>
           ))}
           {filesHere.map((f) => (
-            <div key={f.id} className="glass-card rounded-xl p-3.5">
+            <div key={f.id} className={`glass-card rounded-xl p-3.5 ${f.pinned ? "border-gold-500/40" : ""}`}>
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setViewFile(f)}
@@ -666,6 +687,13 @@ export default function FilesTab({ onToast, focusFileId, onFocusHandled }) {
                 <button onClick={() => setViewFile(f)} className="min-w-0 flex-1 text-left">
                   <p className="text-cream text-sm font-medium truncate">{f.name}</p>
                   <p className="text-cream/40 text-xs">{humanSize(f.size)}</p>
+                </button>
+                <button
+                  onClick={() => togglePin(f)}
+                  className="text-sm px-1"
+                  title={f.pinned ? "পিন সরাও" : "পিন করো"}
+                >
+                  {f.pinned ? "⭐" : <span className="text-cream/20 hover:text-gold-400/60">☆</span>}
                 </button>
                 <button
                   onClick={() => setSheetFile(f)}
