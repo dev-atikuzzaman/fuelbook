@@ -625,7 +625,7 @@ function CustomEntryEditor({ template, entry, onClose, onToast }) {
 }
 
 // ── main CustomTab: templates → entries (with search/tag filter) → editor ──
-export default function CustomTab({ onToast }) {
+export default function CustomTab({ onToast, focusTemplateId, focusEntryId, onFocusHandled }) {
   const [templates, setTemplates] = useState([]);
   const [entries, setEntries] = useState([]);
   const [loadingT, setLoadingT] = useState(true);
@@ -661,6 +661,14 @@ export default function CustomTab({ onToast }) {
     return () => supabase.removeChannel(channel);
   }, []);
 
+  // গ্লোবাল সার্চ থেকে সরাসরি একটা টেমপ্লেটে ঢুকতে চাইলে
+  useEffect(() => {
+    if (!focusTemplateId || loadingT) return;
+    if (selectedTemplate?.id === focusTemplateId) return;
+    const found = templates.find((t) => t.id === focusTemplateId);
+    if (found) setSelectedTemplate(found);
+  }, [focusTemplateId, templates, loadingT, selectedTemplate]);
+
   useEffect(() => {
     if (!selectedTemplate || !supabase) return;
     setLoadingE(true);
@@ -688,6 +696,16 @@ export default function CustomTab({ onToast }) {
       .subscribe();
     return () => supabase.removeChannel(channel);
   }, [selectedTemplate]);
+
+  // এন্ট্রি লোড হয়ে গেলে গ্লোবাল সার্চে ধরা এন্ট্রিটা সরাসরি খুলে দাও
+  useEffect(() => {
+    if (!focusEntryId || !selectedTemplate || loadingE) return;
+    const found = entries.find((e) => e.id === focusEntryId);
+    if (found) {
+      setEditingEntry(found);
+      onFocusHandled && onFocusHandled();
+    }
+  }, [focusEntryId, entries, selectedTemplate, loadingE, onFocusHandled]);
 
   async function deleteTemplate(t) {
     if (!window.confirm(`"${t.name}" টেমপ্লেট ও এর সব এন্ট্রি মুছে ফেলবে?`)) return;

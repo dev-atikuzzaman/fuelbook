@@ -9,7 +9,7 @@ const TABS = [
   { key: "custom", label: "কাস্টম", icon: "🧩" },
 ];
 
-export default function TopNav({ active, onChange, isOnline, onLogout, onOpenAdmin }) {
+export default function TopNav({ active, onChange, isOnline, onLogout, onOpenAdmin, onOpenSearch }) {
   return (
     <>
       {/* Desktop top bar */}
@@ -37,6 +37,15 @@ export default function TopNav({ active, onChange, isOnline, onLogout, onOpenAdm
           ))}
         </nav>
         <div className="flex items-center gap-3 text-xs">
+          {onOpenSearch && (
+            <button
+              onClick={onOpenSearch}
+              className="text-cream/70 hover:text-gold-300 border border-cream/15 hover:border-gold-500/40 rounded-lg px-2.5 py-1.5"
+              title="সব ট্যাব জুড়ে সার্চ করো"
+            >
+              🔍
+            </button>
+          )}
           <Clock />
           <span className={`w-2 h-2 rounded-full ${isOnline ? "bg-emerald-400" : "bg-red-400"}`} />
           <span className="text-cream/60">{isOnline ? "লাইভ সিঙ্ক" : "অফলাইন"}</span>
@@ -71,6 +80,11 @@ export default function TopNav({ active, onChange, isOnline, onLogout, onOpenAdm
             </h1>
           </div>
           <div className="flex items-center gap-3">
+            {onOpenSearch && (
+              <button onClick={onOpenSearch} className="text-cream/70 text-lg" title="সার্চ">
+                🔍
+              </button>
+            )}
             <span className={`w-2 h-2 rounded-full ${isOnline ? "bg-emerald-400" : "bg-red-400"}`} />
             {onOpenAdmin && (
               <button onClick={onOpenAdmin} className="text-gold-400/80 text-lg" title="এডমিন প্যানেল">

@@ -327,7 +327,7 @@ function FolderPickerModal({ files, title, actionLabel, onPick, onClose }) {
   );
 }
 
-export default function FilesTab({ onToast }) {
+export default function FilesTab({ onToast, focusFileId, onFocusHandled }) {
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentFolder, setCurrentFolder] = useState("");
@@ -346,6 +346,16 @@ export default function FilesTab({ onToast }) {
   const [detailsFile, setDetailsFile] = useState(null);
   const [renameFile, setRenameFile] = useState(null);
   const [transfer, setTransfer] = useState(null); // { file, mode: 'move' | 'copy' }
+
+  // গ্লোবাল সার্চ থেকে সরাসরি একটা ফাইলের ডিটেইলস খুলতে চাইলে
+  useEffect(() => {
+    if (!focusFileId || loading) return;
+    const found = files.find((f) => f.id === focusFileId);
+    if (found) {
+      setDetailsFile(found);
+      onFocusHandled && onFocusHandled();
+    }
+  }, [focusFileId, files, loading, onFocusHandled]);
 
   useEffect(() => {
     let active = true;

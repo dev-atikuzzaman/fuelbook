@@ -9,12 +9,12 @@ const TITLES = {
   government: { title: "সরকারি / দাপ্তরিক ডিকশনারি", icon: "🏛️", desc: "সরকারি নথি, আইন, দাপ্তরিক পরিভাষা" },
 };
 
-export default function DictionaryTab({ dictType, onToast }) {
+export default function DictionaryTab({ dictType, onToast, focusEntryId, onFocusHandled }) {
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [activeTag, setActiveTag] = useState("সব");
-  const [editing, setEditing] = useState(null); // entry or null
+  const [editing, setEditing] = useState(null);
   const [showEditor, setShowEditor] = useState(false);
 
   const meta = TITLES[dictType];
@@ -62,7 +62,6 @@ export default function DictionaryTab({ dictType, onToast }) {
                 if (existed) return prev.map((e) => (e.id === payload.new.id ? payload.new : e));
                 return [...prev, payload.new].sort((a, b) => a.term.localeCompare(b.term, "bn"));
               }
-              // অন্য ডিকশনারিতে সরে গেছে — এখান থেকে বাদ দাও
               return existed ? prev.filter((e) => e.id !== payload.new.id) : prev;
             });
           } else if (payload.eventType === "DELETE") {
@@ -83,6 +82,19 @@ export default function DictionaryTab({ dictType, onToast }) {
     entries.forEach((e) => (e.tags || []).forEach((t) => s.add(t)));
     return ["সব", ...Array.from(s)];
   }, [entries]);
+
+  // গ্লোবাল সার্চ থেকে সরাসরি একটা এন্ট্রি খুলতে চাইলে
+  useEffect(() => {
+    if (!focusEntryId || loading) return;
+    const found = entries.find((e) => e.id === focusEntryId);
+    if (found) {
+      setSearch("");
+      setActiveTag("সব");
+      setEditing(found);
+      setShowEditor(true);
+      onFocusHandled && onFocusHandled();
+    }
+  }, [focusEntryId, entries, loading, onFocusHandled]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
