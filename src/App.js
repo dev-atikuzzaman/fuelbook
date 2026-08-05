@@ -7,15 +7,18 @@ import Toast from "./components/Toast";
 import Login from "./components/Login";
 import ResetPassword from "./components/ResetPassword";
 import AdminPanel from "./components/AdminPanel";
+import GlobalSearch from "./components/GlobalSearch";
 import { supabase } from "./lib/supabase";
 
 export default function App() {
   const [active, setActive] = useState("general");
   const [toast, setToast] = useState(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [session, setSession] = useState(undefined); // undefined = checking, null = logged out, obj = logged in
+  const [session, setSession] = useState(undefined);
   const [recoveryMode, setRecoveryMode] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const [focusTarget, setFocusTarget] = useState(null);
 
   useEffect(() => {
     if ("serviceWorker" in navigator) {
@@ -58,7 +61,14 @@ export default function App() {
     setShowAdmin(false);
   }
 
-  // Supabase কনফিগার করা নেই — লোডিং স্টেট
+  function handleSearchSelect(target) {
+    setShowSearch(false);
+    if (target.type === "dictionary") setActive(target.dictType);
+    else if (target.type === "files") setActive("files");
+    else if (target.type === "custom") setActive("custom");
+    setFocusTarget(target);
+  }
+
   if (supabase && session === undefined) {
     return (
       <div className="min-h-screen bg-ink-950 flex items-center justify-center text-cream/40">
@@ -67,7 +77,6 @@ export default function App() {
     );
   }
 
-  // পাসওয়ার্ড রিসেট লিংক থেকে এসেছে — নতুন পাসওয়ার্ড সেট করার স্ক্রিন দেখাও
   if (supabase && recoveryMode && session) {
     return <ResetPassword onDone={() => setRecoveryMode(false)} />;
   }
@@ -78,7 +87,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-ink-950 bg-radial-fade relative overflow-x-hidden">
-      {/* decorative blobs, inspired by reference design */}
       <div className="blob w-96 h-96 bg-gold-500 -top-20 -left-20" />
       <div className="blob w-[28rem] h-[28rem] bg-ink-600 top-1/3 -right-32" />
       <div className="blob w-72 h-72 bg-emerald-700 bottom-0 left-1/4" />
@@ -90,6 +98,7 @@ export default function App() {
           isOnline={isOnline}
           onLogout={handleLogout}
           onOpenAdmin={() => setShowAdmin(true)}
+          onOpenSearch={() => setShowSearch(true)}
         />
 
         {!supabase && (
@@ -100,12 +109,48 @@ export default function App() {
           </div>
         )}
 
-        {active === "general" && <DictionaryTab dictType="general" onToast={showToast} />}
-        {active === "technical" && <DictionaryTab dictType="technical" onToast={showToast} />}
-        {active === "government" && <DictionaryTab dictType="government" onToast={showToast} />}
-        {active === "files" && <FilesTab onToast={showToast} />}
-        {active === "custom" && <CustomTab onToast={showToast} />}
+        {active === "general" && (
+          <DictionaryTab
+            dictType="general"
+            onToast={showToast}
+            focusEntryId={focusTarget?.type === "dictionary" && focusTarget.dictType === "general" ? focusTarget.entryId : null}
+            onFocusHandled={() => setFocusTarget(null)}
+          />
+        )}
+        {active === "technical" && (
+          <DictionaryTab
+            dictType="technical"
+            onToast={showToast}
+            focusEntryId={focusTarget?.type === "dictionary" && focusTarget.dictType === "technical" ? focusTarget.entryId : null}
+            onFocusHandled={() => setFocusTarget(null)}
+          />
+        )}
+        {active === "government" && (
+          <DictionaryTab
+            dictType="government"
+            onToast={showToast}
+            focusEntryId={focusTarget?.type === "dictionary" && focusTarget.dictType === "government" ? focusTarget.entryId : null}
+            onFocusHandled={() => setFocusTarget(null)}
+          />
+        )}
+        {active === "files" && (
+          <FilesTab
+            onToast={showToast}
+            focusFileId={focusTarget?.type === "files" ? focusTarget.fileId : null}
+            onFocusHandled={() => setFocusTarget(null)}
+          />
+        )}
+        {active === "custom" && (
+          <CustomTab
+            onToast={showToast}
+            focusTemplateId={focusTarget?.type === "custom" ? focusTarget.templateId : null}
+            focusEntryId={focusTarget?.type === "custom" ? focusTarget.entryId : null}
+            onFocusHandled={() => setFocusTarget(null)}
+          />
+        )}
       </div>
+
+      {showSearch && <GlobalSearch onClose={() => setShowSearch(false)} onSelect={handleSearchSelect} />}
 
       {showAdmin && (
         <AdminPanel onClose={() => setShowAdmin(false)} onToast={showToast} onLogout={handleLogout} />
