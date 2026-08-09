@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
+import useBackButtonClose from "../hooks/useBackButtonClose";
 
 function humanSize(bytes) {
   if (!bytes) return "0 B";
@@ -14,6 +15,7 @@ function humanSize(bytes) {
 }
 
 export default function AdminPanel({ onClose, onToast, onLogout }) {
+  useBackButtonClose(onClose);
   const [email, setEmail] = useState("");
   const [stats, setStats] = useState(null);
   const [loadingStats, setLoadingStats] = useState(true);
@@ -45,7 +47,6 @@ export default function AdminPanel({ onClose, onToast, onLogout }) {
 
       const totalFileBytes = (filesRes.data || []).reduce((sum, f) => sum + (f.size || 0), 0);
 
-      // tag aggregation across files, custom_entries, and the three dictionaries
       const dictTagsRes = await supabase.from("dictionary_entries").select("tags");
       const tagMap = {};
       const addTags = (rows) =>
@@ -110,7 +111,6 @@ export default function AdminPanel({ onClose, onToast, onLogout }) {
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-5">
-          {/* profile */}
           <div className="glass-card rounded-xl p-4">
             <p className="text-xs text-cream/50 mb-1">লগইন করা আছে</p>
             <p className="text-cream font-medium">{email || "..."}</p>
@@ -122,7 +122,6 @@ export default function AdminPanel({ onClose, onToast, onLogout }) {
             </button>
           </div>
 
-          {/* stats */}
           <div>
             <h3 className="text-sm text-gold-400 font-medium mb-2">📊 অ্যাপ পরিসংখ্যান</h3>
             {loadingStats ? (
@@ -147,7 +146,6 @@ export default function AdminPanel({ onClose, onToast, onLogout }) {
             )}
           </div>
 
-          {/* tag overview */}
           {tagCounts.length > 0 && (
             <div>
               <h3 className="text-sm text-gold-400 font-medium mb-2">🏷️ বেশি ব্যবহৃত ট্যাগ</h3>
@@ -161,7 +159,6 @@ export default function AdminPanel({ onClose, onToast, onLogout }) {
             </div>
           )}
 
-          {/* change password */}
           <div>
             <h3 className="text-sm text-gold-400 font-medium mb-2">🔑 পাসওয়ার্ড পরিবর্তন করো</h3>
             <form onSubmit={handleChangePassword} className="glass-card rounded-xl p-4 flex flex-col gap-2.5">

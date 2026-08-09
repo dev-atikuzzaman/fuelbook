@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { uploadImage } from "../lib/storage";
 import ImageGallery from "./ImageGallery";
+import useBackButtonClose from "../hooks/useBackButtonClose";
 
 const SUBTABS = [
   { key: "meaning", label: "অর্থ", field: "meaning", icon: "🔤" },
@@ -32,6 +33,7 @@ const emptyForm = {
 };
 
 export default function EntryEditor({ dictType, entry, onClose, onToast }) {
+  useBackButtonClose(onClose);
   const [form, setForm] = useState(entry ? { ...emptyForm, ...entry } : emptyForm);
   const [activeSub, setActiveSub] = useState("meaning");
   const [saving, setSaving] = useState(false);
@@ -137,8 +139,6 @@ export default function EntryEditor({ dictType, entry, onClose, onToast }) {
       return;
     }
     setTransferring(true);
-    // বর্তমান ফর্মের সব ডাটা (কোনো আনসেভড এডিটসহ) হুবহু নতুন ডিকশনারিতে যাবে —
-    // কোনো কিছু বাদ পড়বে না বা হাত দিয়ে আবার লিখতে হবে না
     const payload = {
       term: form.term.trim(),
       term_image_url: form.term_image_url || null,
@@ -192,7 +192,7 @@ export default function EntryEditor({ dictType, entry, onClose, onToast }) {
       <div className="anim-in w-full md:max-w-2xl max-h-[92vh] md:max-h-[85vh] bg-ink-900 md:rounded-2xl rounded-t-2xl border border-gold-500/20 shadow-card flex flex-col overflow-hidden">
         {/* header */}
         <div className="flex items-start justify-between p-4 border-b border-gold-500/10">
-          <div className="flex-1 flex gap-3">
+          <div className="flex-1 flex gap-3 min-w-0">
             <div className="relative shrink-0">
               <label className="w-16 h-16 rounded-xl bg-ink-800 border border-gold-500/20 flex items-center justify-center overflow-hidden cursor-pointer">
                 {form.term_image_url ? (
@@ -208,7 +208,7 @@ export default function EntryEditor({ dictType, entry, onClose, onToast }) {
                 </div>
               )}
             </div>
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <input
                 autoFocus
                 value={form.term}
@@ -238,7 +238,7 @@ export default function EntryEditor({ dictType, entry, onClose, onToast }) {
               </div>
             </div>
           </div>
-          <button onClick={onClose} className="text-cream/50 hover:text-cream text-xl px-2">
+          <button onClick={onClose} className="text-cream/50 hover:text-cream text-xl px-2 shrink-0">
             ✕
           </button>
         </div>

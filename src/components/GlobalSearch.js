@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { supabase } from "../lib/supabase";
+import useBackButtonClose from "../hooks/useBackButtonClose";
 
 const DICT_META = {
   general: { label: "সাধারণ", icon: "📖" },
@@ -8,6 +9,7 @@ const DICT_META = {
 };
 
 export default function GlobalSearch({ onClose, onSelect }) {
+  useBackButtonClose(onClose);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState({ dict: [], files: [], custom: [] });
@@ -59,7 +61,6 @@ export default function GlobalSearch({ onClose, onSelect }) {
       });
       setSearched(true);
     } catch {
-      // নীরবে ব্যর্থ হলে খালি ফলাফল দেখাবে
       setSearched(true);
     } finally {
       setLoading(false);

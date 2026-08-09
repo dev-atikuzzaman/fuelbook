@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { supabase } from "../lib/supabase";
 
 export default function Login({ onLoggedIn }) {
-  const [mode, setMode] = useState("login"); // 'login' | 'forgot'
+  const [mode, setMode] = useState("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);

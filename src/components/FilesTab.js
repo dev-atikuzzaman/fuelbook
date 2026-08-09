@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "../lib/supabase";
+import useBackButtonClose from "../hooks/useBackButtonClose";
 import {
   uploadGenericFile,
   getFilePublicUrl,
@@ -104,6 +105,7 @@ function TagEditor({ file, onToast }) {
 
 // ── bottom sheet: all actions for one file ──────────────────────
 function FileActionSheet({ file, onClose, onAction }) {
+  useBackButtonClose(onClose);
   const items = [
     { key: "view", label: "ভিউ করো", icon: "👁️" },
     { key: "details", label: "ডিটেইলস", icon: "ℹ️" },
@@ -146,6 +148,7 @@ function FileActionSheet({ file, onClose, onAction }) {
 
 // ── details modal ──────────────────────────────────────────────
 function FileDetailsModal({ file, onClose }) {
+  useBackButtonClose(onClose);
   const [copied, setCopied] = useState(false);
   const url = getFilePublicUrl(file.path);
 
@@ -199,6 +202,7 @@ function FileDetailsModal({ file, onClose }) {
 
 // ── view / preview modal ────────────────────────────────────────
 function FileViewModal({ file, onClose }) {
+  useBackButtonClose(onClose);
   const url = getFilePublicUrl(file.path);
   const mime = file.mime_type || "";
 
@@ -238,6 +242,7 @@ function FileViewModal({ file, onClose }) {
 
 // ── rename modal ─────────────────────────────────────────────────
 function RenameModal({ file, onClose, onToast, onDone }) {
+  useBackButtonClose(onClose);
   const [name, setName] = useState(file.name);
   const [saving, setSaving] = useState(false);
 
@@ -283,6 +288,7 @@ function RenameModal({ file, onClose, onToast, onDone }) {
 
 // ── folder picker (shared by move & copy) ─────────────────────────
 function FolderPickerModal({ files, title, actionLabel, onPick, onClose }) {
+  useBackButtonClose(onClose);
   const [customPath, setCustomPath] = useState("");
   const paths = allFolderPaths(files);
 
@@ -660,7 +666,7 @@ export default function FilesTab({ onToast, focusFileId, onFocusHandled }) {
       ) : (
         <div className="grid sm:grid-cols-2 gap-3">
           {subfolders.map((f) => (
-            <div key={f} className="glass-card rounded-xl p-3.5 flex items-center gap-3 hover:border-gold-500/40 relative">
+            <div key={f} className="glass-card rounded-xl p-3.5 flex items-center gap-3 hover:border-gold-500/40 relative w-full min-w-0 overflow-hidden">
               <button onClick={() => enterFolder(f)} className="flex items-center gap-3 flex-1 min-w-0 text-left">
                 <span className="text-2xl">📂</span>
                 <span className="text-cream font-medium truncate">{f}</span>
@@ -675,7 +681,7 @@ export default function FilesTab({ onToast, focusFileId, onFocusHandled }) {
             </div>
           ))}
           {filesHere.map((f) => (
-            <div key={f.id} className={`glass-card rounded-xl p-3.5 ${f.pinned ? "border-gold-500/40" : ""}`}>
+            <div key={f.id} className={`glass-card rounded-xl p-3.5 w-full min-w-0 overflow-hidden ${f.pinned ? "border-gold-500/40" : ""}`}>
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setViewFile(f)}

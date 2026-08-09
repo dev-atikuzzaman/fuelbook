@@ -1,11 +1,54 @@
 import React, { useRef, useState } from "react";
 import { uploadMultipleImages, deleteImageByUrl } from "../lib/storage";
+import useBackButtonClose from "../hooks/useBackButtonClose";
+
+function Lightbox({ list, index, setIndex, onClose }) {
+  useBackButtonClose(onClose);
+  return (
+    <div
+      className="fixed inset-0 z-[60] bg-black/85 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <button className="absolute top-4 right-4 text-cream text-2xl" onClick={onClose}>
+        ✕
+      </button>
+      {index > 0 && (
+        <button
+          className="absolute left-2 sm:left-6 text-cream text-3xl px-3"
+          onClick={(e) => {
+            e.stopPropagation();
+            setIndex(index - 1);
+          }}
+        >
+          ‹
+        </button>
+      )}
+      {index < list.length - 1 && (
+        <button
+          className="absolute right-2 sm:right-6 text-cream text-3xl px-3"
+          onClick={(e) => {
+            e.stopPropagation();
+            setIndex(index + 1);
+          }}
+        >
+          ›
+        </button>
+      )}
+      <img
+        src={list[index]}
+        alt=""
+        onClick={(e) => e.stopPropagation()}
+        className="max-w-full max-h-full rounded-lg object-contain"
+      />
+    </div>
+  );
+}
 
 export default function ImageGallery({ images, onChange, folder, onToast, defaultOpen = false }) {
   const [open, setOpen] = useState(defaultOpen);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState("");
-  const [preview, setPreview] = useState(null); // index of image being previewed full-size
+  const [preview, setPreview] = useState(null);
   const inputRef = useRef(null);
 
   async function handlePick(e) {
@@ -81,42 +124,7 @@ export default function ImageGallery({ images, onChange, folder, onToast, defaul
       )}
 
       {preview !== null && list[preview] && (
-        <div
-          className="fixed inset-0 z-[60] bg-black/85 flex items-center justify-center p-4"
-          onClick={() => setPreview(null)}
-        >
-          <button className="absolute top-4 right-4 text-cream text-2xl" onClick={() => setPreview(null)}>
-            ✕
-          </button>
-          {preview > 0 && (
-            <button
-              className="absolute left-2 sm:left-6 text-cream text-3xl px-3"
-              onClick={(e) => {
-                e.stopPropagation();
-                setPreview((p) => p - 1);
-              }}
-            >
-              ‹
-            </button>
-          )}
-          {preview < list.length - 1 && (
-            <button
-              className="absolute right-2 sm:right-6 text-cream text-3xl px-3"
-              onClick={(e) => {
-                e.stopPropagation();
-                setPreview((p) => p + 1);
-              }}
-            >
-              ›
-            </button>
-          )}
-          <img
-            src={list[preview]}
-            alt=""
-            onClick={(e) => e.stopPropagation()}
-            className="max-w-full max-h-full rounded-lg object-contain"
-          />
-        </div>
+        <Lightbox list={list} index={preview} setIndex={setPreview} onClose={() => setPreview(null)} />
       )}
     </div>
   );
