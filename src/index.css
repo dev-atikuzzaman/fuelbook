@@ -10,6 +10,7 @@ html, body {
   font-family: 'Hind Siliguri', system-ui, sans-serif;
   background: #04120c;
   color: #f4ead9;
+  overflow-x: hidden;
 }
 
 ::-webkit-scrollbar { width: 8px; height: 8px; }
@@ -25,29 +26,15 @@ html, body {
   backdrop-filter: blur(6px);
 }
 
-.blob {
-  position: absolute;
-  border-radius: 9999px;
-  filter: blur(60px);
-  opacity: 0.35;
-  pointer-events: none;
-}
+.blob { position: absolute; border-radius: 9999px; filter: blur(60px); opacity: 0.35; pointer-events: none; }
 
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 .anim-in { animation: fadeInUp 0.25s ease-out both; }
 
-@keyframes toastIn {
-  from { opacity: 0; transform: translateY(-12px) translateX(-50%); }
-  to { opacity: 1; transform: translateY(0) translateX(-50%); }
-}
+@keyframes toastIn { from { opacity: 0; transform: translateY(-12px) translateX(-50%); } to { opacity: 1; transform: translateY(0) translateX(-50%); } }
 .toast-in { animation: toastIn 0.25s ease-out both; }
 
-input, textarea, select {
-  outline: none;
-}
+input, textarea, select { outline: none; }
 
 .scrollbar-none::-webkit-scrollbar { display: none; }
 .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
