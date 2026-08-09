@@ -8,19 +8,14 @@ self.addEventListener("install", (e) => {
 
 self.addEventListener("activate", (e) => {
   e.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))
-    )
+    caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
   );
   self.clients.claim();
 });
 
-// Network-first for everything except same-origin static shell files.
-// Supabase API calls always go to network (never cached) so data stays live.
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
-  if (url.origin !== self.location.origin) return; // let supabase.co requests pass through untouched
-
+  if (url.origin !== self.location.origin) return;
   event.respondWith(
     fetch(event.request)
       .then((res) => {
