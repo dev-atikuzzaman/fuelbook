@@ -1,22 +1,17 @@
 <svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#153f2c"/>
-      <stop offset="100%" stop-color="#04120c"/>
+      <stop offset="0%" stop-color="#153f2c"/><stop offset="100%" stop-color="#04120c"/>
     </linearGradient>
     <radialGradient id="glow" cx="28%" cy="18%" r="65%">
-      <stop offset="0%" stop-color="#f5b400" stop-opacity="0.38"/>
-      <stop offset="100%" stop-color="#f5b400" stop-opacity="0"/>
+      <stop offset="0%" stop-color="#f5b400" stop-opacity="0.38"/><stop offset="100%" stop-color="#f5b400" stop-opacity="0"/>
     </radialGradient>
     <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#ffe08a"/>
-      <stop offset="100%" stop-color="#f0a800"/>
+      <stop offset="0%" stop-color="#ffe08a"/><stop offset="100%" stop-color="#f0a800"/>
     </linearGradient>
   </defs>
-
   <rect width="512" height="512" fill="url(#bg)"/>
   <rect width="512" height="512" fill="url(#glow)"/>
-
   <g transform="translate(256,300) scale(0.82)">
     <path d="M -150 -68 C -150 -94 -129 -99 -99 -94 C -68 -89 -18 -78 -5 -58 L -5 92 C -18 72 -68 61 -99 56 C -129 51 -150 46 -150 20 Z" fill="url(#gold)"/>
     <path d="M 150 -68 C 150 -94 129 -99 99 -94 C 68 -89 18 -78 5 -58 L 5 92 C 18 72 68 61 99 56 C 129 51 150 46 150 20 Z" fill="url(#gold)"/>
@@ -28,10 +23,6 @@
     <line x1="124" y1="-27" x2="34" y2="-15" stroke="#123a28" stroke-width="6" stroke-linecap="round" opacity="0.55"/>
     <line x1="124" y1="-1" x2="34" y2="10" stroke="#123a28" stroke-width="6" stroke-linecap="round" opacity="0.55"/>
   </g>
-
   <path d="M 226 90 L 226 200 L 256 176 L 286 200 L 286 90 Z" fill="#e2453c"/>
-
-  <g fill="#ffe08a">
-    <path d="M 390 108 L 398 128 L 418 136 L 398 144 L 390 164 L 382 144 L 362 136 L 382 128 Z"/>
-  </g>
+  <g fill="#ffe08a"><path d="M 390 108 L 398 128 L 418 136 L 398 144 L 390 164 L 382 144 L 362 136 L 382 128 Z"/></g>
 </svg>
