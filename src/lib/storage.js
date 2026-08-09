@@ -20,7 +20,6 @@ export async function uploadImage(file, folder = "misc") {
 }
 
 // একসাথে একাধিক ছবি আপলোড করার জন্য — গ্যালারি ফিচারে ব্যবহার হয়।
-// onProgress(doneCount, totalCount) দিয়ে চাইলে প্রগ্রেস দেখানো যায়।
 export async function uploadMultipleImages(fileList, folder = "misc", onProgress) {
   const files = Array.from(fileList || []);
   const urls = [];
@@ -33,7 +32,6 @@ export async function uploadMultipleImages(fileList, folder = "misc", onProgress
 }
 
 // public URL থেকে bucket-এর ভেতরের path বের করে সেই ছবিটা storage থেকে মুছে ফেলে
-// (গ্যালারি থেকে একটা ছবি রিমুভ করার সময় ব্যবহার হয়; ব্যর্থ হলেও নীরবে এগিয়ে যায়)
 export async function deleteImageByUrl(url) {
   if (!supabase || !url) return;
   const marker = `/${IMAGES_BUCKET}/`;
@@ -94,7 +92,7 @@ export async function moveGenericFile(row, targetFolderPath) {
   if (error) throw error;
 }
 
-// Storage-এর নিজস্ব copy() দিয়ে সার্ভার-সাইডেই কপি হয় — আবার ডাউনলোড/আপলোড লাগে না
+// Storage-এর নিজস্ব copy() দিয়ে সার্ভার-সাইডেই কপি হয়
 export async function copyGenericFile(row, targetFolderPath, newName) {
   if (!supabase) throw new Error("Supabase কনফিগার করা নেই");
   const finalName = newName || row.name;
@@ -118,7 +116,6 @@ export async function deleteFilesBulk(rows) {
   if (!rows || rows.length === 0) return;
   const paths = rows.map((r) => r.path);
   const ids = rows.map((r) => r.id);
-  // storage.remove এ একবারে অনেক path পাঠানো যায়, কিন্তু ব্যাচে ভাগ করে দিলে বেশি নিরাপদ
   const BATCH = 50;
   for (let i = 0; i < paths.length; i += BATCH) {
     await supabase.storage.from(FILES_BUCKET).remove(paths.slice(i, i + BATCH));
