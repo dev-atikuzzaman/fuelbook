@@ -4,7 +4,6 @@
 -- Supabase Dashboard → SQL Editor → New query → এই পুরোটা paste করে Run করো
 -- ════════════════════════════════════════════════════════════════
 
--- ১) টেবিল পলিসি: anon (না-লগইন) অ্যাক্সেস বাদ, শুধু authenticated চলবে
 do $$
 declare t text;
 begin
@@ -16,7 +15,6 @@ begin
   end loop;
 end $$;
 
--- ২) স্টোরেজ পলিসি: আপলোড/ডিলিট শুধু authenticated এডমিনের জন্য
 drop policy if exists "anon_storage_all_images" on storage.objects;
 drop policy if exists "authenticated_storage_write_images" on storage.objects;
 create policy "authenticated_storage_write_images" on storage.objects
@@ -29,12 +27,6 @@ create policy "authenticated_storage_write_files" on storage.objects
   for all using (bucket_id = 'app-files' and auth.role() = 'authenticated')
   with check (bucket_id = 'app-files' and auth.role() = 'authenticated');
 
--- ৩) এরপর এডমিন অ্যাকাউন্ট বানাও:
--- Supabase Dashboard → Authentication → Users → "Add user"
---   → নিজের ইমেইল ও পাসওয়ার্ড দাও → "Auto Confirm User" টিক দিয়ে Create
---
--- ৪) তারপর Authentication → Settings এ গিয়ে
--- "Allow new users to sign up" বন্ধ (OFF) করে দাও।
---
--- ৫) নতুন কোড GitHub এ push করো, Vercel অটো-রিডিপ্লয় করবে।
--- ════════════════════════════════════════════════════════════════
+-- এরপর Supabase Dashboard → Authentication → Users → "Add user" দিয়ে
+-- এডমিন অ্যাকাউন্ট বানাও ("Auto Confirm User" টিক দিয়ে), তারপর
+-- Authentication → Settings এ "Allow new users to sign up" বন্ধ করে দাও।

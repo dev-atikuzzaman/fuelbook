@@ -11,6 +11,7 @@ create table if not exists public.dictionary_entries (
   dict_type     text not null check (dict_type in ('general','technical','government')),
   term          text not null,
   term_image_url text,
+  gallery_images text[] not null default '{}',
   meaning       text default '',
   explanation   text default '',
   analogy       text default '',
@@ -18,12 +19,14 @@ create table if not exists public.dictionary_entries (
   example       text default '',
   misc          text default '',
   tags          text[] not null default '{}',
+  pinned        boolean not null default false,
   created_at    timestamptz not null default now(),
   updated_at    timestamptz not null default now()
 );
 create index if not exists idx_dict_type on public.dictionary_entries (dict_type);
 create index if not exists idx_dict_term on public.dictionary_entries using gin (to_tsvector('simple', term));
 create index if not exists idx_dict_tags on public.dictionary_entries using gin (tags);
+create index if not exists idx_dict_pinned on public.dictionary_entries (pinned);
 
 -- ── ২) ফাইল/ফোল্ডার আপলোড টেবিল (metadata; আসল ফাইল Storage bucket এ) ──
 create table if not exists public.files (
@@ -34,6 +37,7 @@ create table if not exists public.files (
   size        bigint default 0,
   mime_type   text default '',
   tags        text[] not null default '{}',
+  pinned      boolean not null default false,
   created_at  timestamptz not null default now()
 );
 create index if not exists idx_files_folder on public.files (folder_path);
@@ -54,7 +58,9 @@ create table if not exists public.custom_entries (
   title         text not null,
   main_text     text default '',
   main_image_url text,
+  gallery_images text[] not null default '{}',
   tags          text[] not null default '{}',
+  pinned        boolean not null default false,
   created_at    timestamptz not null default now(),
   updated_at    timestamptz not null default now()
 );
